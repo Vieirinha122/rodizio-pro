@@ -1,0 +1,93 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=DM+Sans:wght@400;500&family=JetBrains+Mono:wght@500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  /* Cores — Dark-first (DESIGN_SYSTEM.md) */
+  --color-fundo: #0E1116;
+  --color-superficie: #181C24;
+  --color-borda: #2A2F3A;
+  --color-texto: #EDEBE6;
+  --color-texto-suave: #7A7F8A;
+  --color-quadra: #C8873A;
+  --color-quadra-clara: #D9A05B;
+  --color-linha-quadra: rgba(255,255,255,0.9);
+  --color-acento: #CDFF00;
+  --color-rota: #00E5B0;
+  --color-adversario: #FF6B6B;
+  --color-erro: #FF4D4D;
+
+  /* Tipografia */
+  --font-family-titulo: "Space Grotesk", sans-serif;
+  --font-family-corpo: "DM Sans", sans-serif;
+  --font-family-mono: "JetBrains Mono", monospace;
+
+  /* Raio */
+  --radius-controle: 8px;
+  --radius-painel: 12px;
+
+  /* Sombra suave para elevação */
+  --shadow-elevado: 0 4px 24px -8px rgba(0,0,0,0.6);
+}
+
+@layer base {
+  html {
+    font-family: var(--font-family-corpo);
+    background-color: var(--color-fundo);
+    color: var(--color-texto);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    min-height: 100vh;
+  }
+
+  * {
+    border-color: var(--color-borda);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-acento);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer utilities {
+  .font-titulo { font-family: var(--font-family-titulo); }
+  .font-corpo { font-family: var(--font-family-corpo); }
+  .font-mono { font-family: var(--font-family-mono); }
+
+  .bg-fundo { background-color: var(--color-fundo); }
+  .bg-superficie { background-color: var(--color-superficie); }
+  .bg-quadra { background-color: var(--color-quadra); }
+  .bg-quadra-clara { background-color: var(--color-quadra-clara); }
+  .bg-acento { background-color: var(--color-acento); }
+  .bg-rota { background-color: var(--color-rota); }
+  .bg-adversario { background-color: var(--color-adversario); }
+  .bg-erro { background-color: var(--color-erro); }
+
+  .text-texto { color: var(--color-texto); }
+  .text-texto-suave { color: var(--color-texto-suave); }
+  .text-acento { color: var(--color-acento); }
+  .text-rota { color: var(--color-rota); }
+  .text-erro { color: var(--color-erro); }
+
+  .border-borda { border-color: var(--color-borda); }
+  .border-acento { border-color: var(--color-acento); }
+  .border-rota { border-color: var(--color-rota); }
+  .border-erro { border-color: var(--color-erro); }
+
+  .rounded-controle { border-radius: var(--radius-controle); }
+  .rounded-painel { border-radius: var(--radius-painel); }
+
+  .shadow-elevado { box-shadow: var(--shadow-elevado); }
+}
