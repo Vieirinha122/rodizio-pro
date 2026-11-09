@@ -8,12 +8,14 @@
   --color-borda: #2A2F3A;
   --color-texto: #EDEBE6;
   --color-texto-suave: #7A7F8A;
+  --color-texto-na-quadra: rgba(14,17,22,0.62);
   --color-quadra: #C8873A;
   --color-quadra-clara: #D9A05B;
   --color-linha-quadra: rgba(255,255,255,0.9);
   --color-acento: #CDFF00;
   --color-rota: #00E5B0;
   --color-adversario: #FF6B6B;
+  --color-adversario-claro: #FF8E8E;
   --color-erro: #FF4D4D;
 
   /* Tipografia */
@@ -90,4 +92,15 @@
   .rounded-painel { border-radius: var(--radius-painel); }
 
   .shadow-elevado { box-shadow: var(--shadow-elevado); }
+
+  /* Animações */
+  @keyframes slide-up {
+    from { transform: translateY(100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .animate-slide-up { animation: slide-up 0.25s ease-out; }
+
+  /* Scrollbar hide */
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
 }
