@@ -1,10 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
 
 const url = import.meta.env.VITE_SUPABASE_URL
-const chaveAnonima = import.meta.env.VITE_SUPABASE_ANON_KEY
+const chavePublica = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? import.meta.env.VITE_SUPABASE_ANON_KEY
 
-export const supabaseConfigurado = Boolean(url && chaveAnonima)
+export const supabaseConfigurado = Boolean(url && chavePublica)
 
 export const supabase = supabaseConfigurado
-  ? createClient(url!, chaveAnonima!)
+  ? createClient(url!, chavePublica!)
   : null
