@@ -40,24 +40,24 @@ function interpolarCoordenadas(
 }
 
 /** Mantém a origem da formação anterior para animar a troca entre os dois saques. */
-function useTransicaoFormacao(jogadores: JogadorNaQuadra[], tipoSaida: EstadoRodizio['tipoSaida']) {
+function useTransicaoFormacao(jogadores: JogadorNaQuadra[], chaveFormacao: string) {
   const destinos = useMemo<MapaCoordenadas>(
     () => Object.fromEntries(jogadores.map((jogador) => [jogador.funcao, coordenadasDoJogador(jogador)])),
     [jogadores],
   )
   const destinosAnteriores = useRef(destinos)
-  const tipoSaidaAnterior = useRef(tipoSaida)
+  const chaveFormacaoAnterior = useRef(chaveFormacao)
   const [origens, setOrigens] = useState<MapaCoordenadas | null>(null)
   const [progresso, setProgresso] = useState(1)
 
   useLayoutEffect(() => {
-    if (tipoSaidaAnterior.current === tipoSaida) {
+    if (chaveFormacaoAnterior.current === chaveFormacao) {
       destinosAnteriores.current = destinos
       return
     }
 
     const origem = destinosAnteriores.current
-    tipoSaidaAnterior.current = tipoSaida
+    chaveFormacaoAnterior.current = chaveFormacao
     destinosAnteriores.current = destinos
     setOrigens(origem)
     setProgresso(0)
@@ -84,7 +84,7 @@ function useTransicaoFormacao(jogadores: JogadorNaQuadra[], tipoSaida: EstadoRod
 
     frameId = requestAnimationFrame(animar)
     return () => cancelAnimationFrame(frameId)
-  }, [destinos, tipoSaida])
+  }, [chaveFormacao, destinos])
 
   return { destinos, origens, progresso }
 }
@@ -96,6 +96,8 @@ function JogadorPin({
   coordenadas,
   foraDaQuadra = false,
   sacando = false,
+  destacado = false,
+  atenuado = false,
   onClick,
 }: {
   funcao: FuncaoJogador
@@ -103,6 +105,8 @@ function JogadorPin({
   coordenadas?: [number, number]
   foraDaQuadra?: boolean
   sacando?: boolean
+  destacado?: boolean
+  atenuado?: boolean
   onClick?: () => void
 }) {
   // Permite abrir a instrução do jogador também com Enter ou Espaço.
@@ -137,7 +141,18 @@ function JogadorPin({
       aria-label={onClick ? `${funcao}${sacando ? ' sacando' : foraDaQuadra ? ' fora da quadra' : ` na posição ${posicao}`}` : undefined}
       className={onClick ? 'cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento' : undefined}
       filter="none"
+      opacity={atenuado ? 0.3 : 1}
     >
+      {destacado && (
+        <circle
+          r="19"
+          fill="none"
+          stroke="var(--color-acento)"
+          strokeWidth="1.6"
+          strokeDasharray="3,2"
+          pointerEvents="none"
+        />
+      )}
       {/* Círculo principal do jogador. */}
       <circle
         r="14"
@@ -180,8 +195,8 @@ function JogadorPin({
 
 /** Quadra vertical com a rede horizontal e o nosso time abaixo dela. */
 export function QuadraSVG({ estado, onJogadorClick }: QuadraSVGProps) {
-  const { tipoSaida, jogadores } = estado
-  const { destinos, origens, progresso } = useTransicaoFormacao(jogadores, tipoSaida)
+  const { tipoSaida, faseNossoSaque, jogadores } = estado
+  const { destinos, origens, progresso } = useTransicaoFormacao(jogadores, `${tipoSaida}-${faseNossoSaque ?? 'recepcao'}`)
   const jogadoresAnimados = jogadores.map((jogador) => ({
     ...jogador,
     coordenadas: origens?.[jogador.funcao]
@@ -200,6 +215,8 @@ export function QuadraSVG({ estado, onJogadorClick }: QuadraSVGProps) {
   const levantador = jogadoresAnimados.find((jogador) => jogador.funcao === 'L')
   const demaisJogadores = jogadoresAnimados.filter((jogador) => jogador.funcao !== 'L')
   const isNossoSaque = tipoSaida === 'nosso-saque'
+  const posicaoDestacada = estado.posicaoDestacada
+  const possuiJogadorDestacado = jogadores.some((jogador) => jogador.funcao === posicaoDestacada)
   return (
     <div
       className="mx-auto w-full max-w-[680px] aspect-[2/3] max-h-[72vh] relative bg-quadra rounded-none overflow-hidden"
@@ -235,7 +252,7 @@ export function QuadraSVG({ estado, onJogadorClick }: QuadraSVGProps) {
         <text x="120" y="35" textAnchor="middle" fontFamily="var(--font-family-titulo)" fontSize="8" fontWeight="500" fill="var(--color-texto-na-quadra)" letterSpacing="0.04em">
           ADVERSÁRIO
         </text>
-        <text x="120" y="338" textAnchor="middle" fontFamily="var(--font-family-titulo)" fontSize="8" fontWeight="500" fill="var(--color-texto-na-quadra)" letterSpacing="0.04em">
+        <text x="120" y="355" textAnchor="middle" fontFamily="var(--font-family-titulo)" fontSize="7" fontWeight="500" fill="var(--color-texto-na-quadra)" letterSpacing="0.04em">
           NOSSO TIME
         </text>
         <text x="120" y="139" textAnchor="middle" fontFamily="var(--font-family-mono)" fontSize="7" fontWeight="500" fill="var(--color-texto-na-quadra)">
@@ -272,6 +289,8 @@ export function QuadraSVG({ estado, onJogadorClick }: QuadraSVGProps) {
             coordenadas={jogador.coordenadas}
             foraDaQuadra={jogador.foraDaQuadra}
             sacando={jogador.sacando}
+            destacado={jogador.funcao === posicaoDestacada}
+            atenuado={possuiJogadorDestacado && jogador.funcao !== posicaoDestacada}
             onClick={() => onJogadorClick?.(jogador.funcao)}
           />
         ))}
@@ -285,6 +304,8 @@ export function QuadraSVG({ estado, onJogadorClick }: QuadraSVGProps) {
             coordenadas={levantador.coordenadas}
             foraDaQuadra={levantador.foraDaQuadra}
             sacando={levantador.sacando}
+            destacado={levantador.funcao === posicaoDestacada}
+            atenuado={possuiJogadorDestacado && levantador.funcao !== posicaoDestacada}
             onClick={() => onJogadorClick?.('L')}
           />
         )}

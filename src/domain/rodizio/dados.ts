@@ -12,7 +12,7 @@
  * 2. NOSSO SAQUE: formação inicial nas posições base P1-P6
  */
 
-import type { Rodizio, PosicaoQuadra, FuncaoJogador, FormacaoRecepcao, JogadorNaQuadra, RotaInfiltracao, TipoSaida, AreaCasinha } from './tipos'
+import type { Rodizio, PosicaoQuadra, FuncaoJogador, FormacaoRecepcao, JogadorNaQuadra, RotaInfiltracao, TipoSaida, AreaCasinha, FaseNossoSaque } from './tipos'
 
 /** Posições base de cada função em cada rodízio (R1-R6)
  *  A linha indica onde o jogador COMEÇA a rotação (antes do saque)
@@ -23,7 +23,8 @@ export const POSICOES_BASE_POR_RODIZIO: Record<Rodizio, Record<FuncaoJogador, Po
   3: { L: 'P5', O: 'P2', P1: 'P6', P2: 'P4', C1: 'P1', C2: 'P3', LIB: 'P3' },
   4: { L: 'P4', O: 'P1', P1: 'P5', P2: 'P3', C1: 'P6', C2: 'P2', LIB: 'P2' },
   5: { L: 'P3', O: 'P6', P1: 'P4', P2: 'P2', C1: 'P5', C2: 'P1', LIB: 'P1' },
-  6: { L: 'P2', O: 'P5', P1: 'P3', P2: 'P1', C1: 'P4', C2: 'P6', LIB: 'P6' },
+  // Referência validada para a P2: o oposto ocupa P1 e executa o saque.
+  6: { L: 'P2', O: 'P1', P1: 'P3', P2: 'P5', C1: 'P4', C2: 'P6', LIB: 'P6' },
 }
 
 /** Permite escolher o rodízio a partir da posição ocupada pelo levantador. */
@@ -34,6 +35,19 @@ export const RODIZIO_POR_POSICAO_LEVANTADOR: Record<PosicaoQuadra, Rodizio> = {
   P4: 4,
   P5: 3,
   P6: 2,
+}
+
+/** Retorna a posição de uma função em um rodízio específico. */
+export function obterPosicaoJogador(rodizio: Rodizio, funcao: FuncaoJogador): PosicaoQuadra {
+  return POSICOES_BASE_POR_RODIZIO[rodizio][funcao]
+}
+
+/** Permite trocar o rodízio usando qualquer função como referência visual. */
+export function obterRodizioPorPosicaoJogador(funcao: FuncaoJogador, posicao: PosicaoQuadra): Rodizio {
+  const rodizioEncontrado = (Object.entries(POSICOES_BASE_POR_RODIZIO) as [string, Record<FuncaoJogador, PosicaoQuadra>][])
+    .find(([, posicoes]) => posicoes[funcao] === posicao)?.[0]
+
+  return Number(rodizioEncontrado) as Rodizio
 }
 
 /** Retorna a leitura tática principal da rotação selecionada. */
@@ -349,6 +363,8 @@ const AJUSTES_VISUAIS_NOSSO_SAQUE: Record<Rodizio, Partial<Record<FuncaoJogador,
   },
   5: {
     P2: [22, 52],
+    // Com o C2 sacando, o líbero sai antes do apito e o C1 ocupa a rede.
+    C1: [50, 52],
     C2: [50, 52],
     L: [78, 52],
     LIB: [22, 78],
@@ -461,7 +477,12 @@ export const ROTAS_TRANSICAO: Record<Rodizio, Record<FuncaoJogador, RotaInfiltra
 }
 
 /** Gera o estado completo do rodízio para um R1-R6 e tipo de saque */
-export function gerarEstadoRodizio(rodizio: Rodizio, tipoSaida: TipoSaida, posicaoDestacada?: FuncaoJogador) {
+export function gerarEstadoRodizio(
+  rodizio: Rodizio,
+  tipoSaida: TipoSaida,
+  posicaoDestacada?: FuncaoJogador,
+  faseNossoSaque: FaseNossoSaque = 'antes-saque',
+) {
   const posicoesBase = POSICOES_BASE_POR_RODIZIO[rodizio]
   const centralSubstituido = rodizio === 3 || rodizio === 4 || rodizio === 5 ? 'C1' : 'C2'
   
@@ -504,22 +525,41 @@ export function gerarEstadoRodizio(rodizio: Rodizio, tipoSaida: TipoSaida, posic
     }
   } else {
     const ajusteVisualNossoSaque = AJUSTES_VISUAIS_NOSSO_SAQUE[rodizio]
+    const funcaoSacador = Object.entries(posicoesBase).find(([, posicao]) => posicao === 'P1')?.[0] as FuncaoJogador | undefined
+    const coordenadasSacador: [number, number] = [90, 91]
+    const trocaPreSaqueP3 = rodizio === 5 && faseNossoSaque === 'troca-pre-saque'
 
     // Em P2 e P5 os dois centrais permanecem em quadra e o líbero espera fora para a troca.
     const jogadores: JogadorNaQuadra[] = Object.entries(posicoesBase)
       .filter(([funcao]) => {
         if (rodizio === 3 || rodizio === 6) return funcao !== 'LIB'
-        if (rodizio === 4 || rodizio === 5) return funcao !== 'C1' && funcao !== 'LIB'
+        if (rodizio === 4) return funcao !== 'C1' && funcao !== 'LIB'
+        // P3 do levantador: o C2 saca; o líbero já saiu e o C1 permanece na rede.
+        if (rodizio === 5) return funcao !== 'LIB'
         return funcao !== 'C2' && funcao !== 'LIB'
       })
-      .map(([funcao, posicao]) => ({
-        funcao: funcao as FuncaoJogador,
-        posicao,
-        coordenadas: ajusteVisualNossoSaque[funcao as FuncaoJogador],
-        foraDaQuadra: rodizio === 1 && funcao === 'L',
-        sacando: rodizio === 1 && funcao === 'L',
-        naRecepcao: false,
-      }))
+      .map(([funcao, posicao]) => {
+        const funcaoJogador = funcao as FuncaoJogador
+        const sacando = funcaoJogador === funcaoSacador && faseNossoSaque !== 'apos-saque'
+        const entrouNaDefesa = funcaoJogador === funcaoSacador && faseNossoSaque === 'apos-saque'
+        const centralAguardandoTroca = trocaPreSaqueP3 && funcaoJogador === 'C1'
+        const destinoDefesa: PosicaoQuadra = rodizio === 5 && entrouNaDefesa ? 'P5' : 'P1'
+
+        return {
+          funcao: funcaoJogador,
+          posicao: entrouNaDefesa ? destinoDefesa : posicao,
+          coordenadas: centralAguardandoTroca
+            ? [9, 83]
+            : sacando
+            ? coordenadasSacador
+            : entrouNaDefesa
+              ? posicaoParaCoordenadas(destinoDefesa)
+              : ajusteVisualNossoSaque[funcaoJogador],
+          foraDaQuadra: sacando || centralAguardandoTroca,
+          sacando,
+          naRecepcao: false,
+        }
+      })
 
     if (rodizio === 3 || rodizio === 6) {
       jogadores.push({
@@ -529,11 +569,19 @@ export function gerarEstadoRodizio(rodizio: Rodizio, tipoSaida: TipoSaida, posic
         foraDaQuadra: true,
         naRecepcao: false,
       })
-    } else if (rodizio === 4 || rodizio === 5) {
+    } else if (rodizio === 4) {
       jogadores.push({
         funcao: 'LIB',
         posicao: posicoesBase.C1,
         coordenadas: ajusteVisualNossoSaque.LIB,
+        naRecepcao: false,
+      })
+    } else if (rodizio === 5) {
+      jogadores.push({
+        funcao: 'LIB',
+        posicao: 'P3',
+        coordenadas: trocaPreSaqueP3 ? [50, 52] : [9, 83],
+        foraDaQuadra: !trocaPreSaqueP3,
         naRecepcao: false,
       })
     } else {
@@ -543,6 +591,7 @@ export function gerarEstadoRodizio(rodizio: Rodizio, tipoSaida: TipoSaida, posic
         coordenadas: ajusteVisualNossoSaque.LIB ?? ajusteVisualNossoSaque.C2,
         naRecepcao: false,
       })
+
     }
 
     // Formação de recepção vazia para nosso saque (não usada, mas mantém tipo)
@@ -555,6 +604,7 @@ export function gerarEstadoRodizio(rodizio: Rodizio, tipoSaida: TipoSaida, posic
     return {
       rodizio,
       tipoSaida,
+      faseNossoSaque,
       jogadores,
       formacaoRecepcao: formacaoVazia,
       posicaoDestacada,

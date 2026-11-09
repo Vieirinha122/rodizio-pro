@@ -5,6 +5,9 @@ export type Rodizio = 1 | 2 | 3 | 4 | 5 | 6
 /** Tipo de situação: saque do nosso time ou saque adversário */
 export type TipoSaida = 'nosso-saque' | 'saque-adversario'
 
+/** Momento didático mostrado quando o nosso time está sacando. */
+export type FaseNossoSaque = 'troca-pre-saque' | 'antes-saque' | 'apos-saque'
+
 export type PosicaoQuadra =
   | 'P1'  // Fundo direito (saque/recepção)
   | 'P2'  // Frente direita (saída de rede)
@@ -80,6 +83,7 @@ export interface FormacaoRecepcao {
 export interface EstadoRodizio {
   rodizio: Rodizio
   tipoSaida: TipoSaida
+  faseNossoSaque?: FaseNossoSaque
   jogadores: JogadorNaQuadra[]
   formacaoRecepcao: FormacaoRecepcao
   posicaoDestacada?: FuncaoJogador

@@ -27,14 +27,14 @@ export const POSICOES: PosicaoInfo[] = [
 ]
 
 interface FiltroPosicaoContextValue {
-  posicaoSelecionada: PosicaoJogador
-  setPosicaoSelecionada: (pos: PosicaoJogador) => void
+  posicaoSelecionada: PosicaoJogador | null
+  setPosicaoSelecionada: (pos: PosicaoJogador | null) => void
 }
 
 const FiltroPosicaoContext = createContext<FiltroPosicaoContextValue | null>(null)
 
 export function FiltroPosicaoProvider({ children }: { children: ReactNode }) {
-  const [posicaoSelecionada, setPosicaoSelecionada] = useState<PosicaoJogador>('L')
+  const [posicaoSelecionada, setPosicaoSelecionada] = useState<PosicaoJogador | null>(null)
 
   return (
     <FiltroPosicaoContext.Provider value={{ posicaoSelecionada, setPosicaoSelecionada }}>
@@ -62,7 +62,7 @@ export function FiltroPosicao() {
           <button
             key={codigo}
             type="button"
-            onClick={() => setPosicaoSelecionada(codigo)}
+            onClick={() => setPosicaoSelecionada(posicaoSelecionada === codigo ? null : codigo)}
             aria-pressed={posicaoSelecionada === codigo}
             className={`
               flex-shrink-0 cursor-pointer rounded-controle px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento

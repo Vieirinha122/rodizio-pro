@@ -1,9 +1,10 @@
-import type { PosicaoQuadra, Rodizio, TipoSaida } from '../../domain/rodizio'
-import { obterLeituraRodizio, RODIZIO_POR_POSICAO_LEVANTADOR } from '../../domain/rodizio'
+import type { FuncaoJogador, PosicaoQuadra, Rodizio, TipoSaida } from '../../domain/rodizio'
+import { obterLeituraRodizio, obterPosicaoJogador, obterRodizioPorPosicaoJogador } from '../../domain/rodizio'
 
 interface HeaderRodizioProps {
-  /** Posição do levantador que está ativa na formação. */
   rodizioAtivo: Rodizio
+  /** Jogador usado para navegar pelas posições P1-P6. */
+  funcaoReferencia: FuncaoJogador | null
   /** Callback quando o rodízio muda. */
   onRodizioChange: (rodizio: Rodizio) => void
   /** Situação atual do rally. */
@@ -14,14 +15,29 @@ interface HeaderRodizioProps {
 
 const posicoesLevantador: PosicaoQuadra[] = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6']
 
-/** Cabeçalho que separa a posição do levantador, a situação e a leitura atual. */
+const nomesFuncoes: Record<FuncaoJogador, string> = {
+  L: 'Levantador',
+  O: 'Oposto',
+  P1: 'PT1',
+  P2: 'PT2',
+  C1: 'Central 1',
+  C2: 'Central 2',
+  LIB: 'Líbero',
+}
+
+/** Cabeçalho que permite navegar pelo rodízio a partir de qualquer função. */
 export function HeaderRodizio({
   rodizioAtivo,
+  funcaoReferencia,
   onRodizioChange,
   tipoSaida,
   onTipoSaidaChange,
 }: HeaderRodizioProps) {
   const { posicaoLevantador, posicaoOposto } = obterLeituraRodizio(rodizioAtivo)
+  // Sem filtro, a navegação continua pelo levantador, mas sem apresentá-lo como seleção do usuário.
+  const funcaoNavegacao = funcaoReferencia ?? 'L'
+  const posicaoReferencia = obterPosicaoJogador(rodizioAtivo, funcaoNavegacao)
+  const nomeReferencia = funcaoReferencia ? nomesFuncoes[funcaoReferencia] : null
 
   return (
     <header className="sticky top-0 z-10 border-b border-borda bg-fundo/98">
@@ -50,19 +66,28 @@ export function HeaderRodizio({
           </div>
 
           <div className="flex items-center gap-3 lg:min-w-[260px] lg:justify-end" aria-live="polite">
+            <a href="/editor" className="rounded-controle bg-superficie px-3 py-2 text-xs text-texto-suave whitespace-nowrap transition-colors hover:bg-borda hover:text-texto">Modo editor</a>
             <span className="font-mono text-xs text-texto-suave">Referência atual</span>
             <div className="text-right">
-              <p className="font-titulo text-sm font-semibold text-acento">Levantador em {posicaoLevantador}</p>
-              <p className="mt-0.5 font-mono text-[11px] text-texto-suave">Oposto em {posicaoOposto}</p>
+              <p className="font-titulo text-sm font-semibold text-acento">
+                {nomeReferencia ? `${nomeReferencia} em ${posicaoReferencia}` : 'Nenhum jogador selecionado'}
+              </p>
+              <p className="mt-0.5 font-mono text-[11px] text-texto-suave">
+                {nomeReferencia
+                  ? funcaoReferencia === 'L' ? `Oposto em ${posicaoOposto}` : `Levantador em ${posicaoLevantador}`
+                  : 'Use “Ver como” para mudar a referência'}
+              </p>
             </div>
           </div>
         </div>
 
         <div className="mt-3 flex flex-col gap-2 border-t border-borda/70 pt-3 sm:flex-row sm:items-center sm:gap-4">
-          <span className="shrink-0 text-xs font-medium text-texto-suave">Posição do levantador</span>
-          <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto pb-0.5 scrollbar-hide" role="radiogroup" aria-label="Posição do levantador">
+          <span className="shrink-0 text-xs font-medium text-texto-suave">
+            {nomeReferencia ? `Posição de ${nomeReferencia}` : 'Navegar pelo rodízio'}
+          </span>
+          <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto pb-0.5 scrollbar-hide" role="radiogroup" aria-label={nomeReferencia ? `Posição de ${nomeReferencia}` : 'Navegar pelo rodízio'}>
             {posicoesLevantador.map((posicao) => {
-              const ativo = posicaoLevantador === posicao
+              const ativo = posicaoReferencia === posicao
 
               return (
                 <button
@@ -70,8 +95,8 @@ export function HeaderRodizio({
                   type="button"
                   role="radio"
                   aria-checked={ativo}
-                  aria-label={`Levantador na posição ${posicao}`}
-                  onClick={() => onRodizioChange(RODIZIO_POR_POSICAO_LEVANTADOR[posicao])}
+                  aria-label={`${nomeReferencia ?? 'Rodízio'} na posição ${posicao}`}
+                  onClick={() => onRodizioChange(obterRodizioPorPosicaoJogador(funcaoNavegacao, posicao))}
                   className={`min-h-9 min-w-12 cursor-pointer rounded-controle px-3 py-1.5 font-mono text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento ${
                     ativo
                       ? 'bg-acento text-fundo'

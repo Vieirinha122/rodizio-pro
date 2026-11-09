@@ -2,3 +2,4 @@
 export * from './tipos'
 export * from './dados'
 export * from './instrucoes'
+export * from './formacoesTreinador'
