@@ -41,6 +41,18 @@ O `vercel.json` já configura:
 - Instalável no celular (Add to Home Screen)
 - Atualização automática via `registerType: 'autoUpdate'`
 
+## Sincronização entre celular e computador
+
+As formações continuam salvas localmente, inclusive sem internet. Para sincronizá-las entre dispositivos, use o Supabase:
+
+1. Crie um projeto no [Supabase](https://supabase.com).
+2. No SQL Editor, execute [`supabase/schema.sql`](./supabase/schema.sql).
+3. Em Authentication > URL Configuration, inclua as URLs do projeto (por exemplo, `http://localhost:5173/editor` e a URL da Vercel com `/editor`).
+4. Copie [`.env.example`](./.env.example) para `.env.local` e preencha `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`.
+5. Em Authentication > Providers, mantenha o login por e-mail com magic link habilitado.
+
+No editor, informe seu e-mail e abra o link recebido. Ao salvar uma formação, ela será enviada para a conta e carregada automaticamente em outro dispositivo autenticado.
+
 ## Estrutura
 
 ```

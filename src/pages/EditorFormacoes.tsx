@@ -1,6 +1,16 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import type { Session } from '@supabase/supabase-js'
 import type { FuncaoJogador, Rodizio } from '../domain/rodizio'
-import { CHAVE_NOTAS_TREINADOR, carregarBancoFormacoes, chaveFormacaoTreinador, salvarBancoFormacoes, type BancoFormacoesTreinador, type FormacaoTreinador } from '../domain/rodizio'
+import {
+  baixarDadosTreinador,
+  carregarDadosLocais,
+  chaveFormacaoTreinador,
+  enviarDadosTreinador,
+  salvarDadosLocais,
+  type BancoFormacoesTreinador,
+  type FormacaoTreinador,
+} from '../domain/rodizio'
+import { supabase, supabaseConfigurado } from '../lib/supabase'
 
 const funcoes: FuncaoJogador[] = ['L', 'O', 'P1', 'P2', 'C1', 'C2', 'LIB']
 const rotulos: Record<FuncaoJogador, string> = { L: 'L', O: 'O', P1: 'PT1', P2: 'PT2', C1: 'C1', C2: 'C2', LIB: 'LIB' }
@@ -12,16 +22,46 @@ function criarFormacao(): FormacaoTreinador {
 
 export function EditorFormacoes() {
   const [rodizio, setRodizio] = useState<Rodizio>(1)
-  const [banco, setBanco] = useState<BancoFormacoesTreinador>(carregarBancoFormacoes)
-  const [notas, setNotas] = useState<Record<string, string>>(() => {
-    try { return JSON.parse(localStorage.getItem(CHAVE_NOTAS_TREINADOR) ?? '{}') as Record<string, string> } catch { return {} }
-  })
+  const dadosLocais = useMemo(carregarDadosLocais, [])
+  const [banco, setBanco] = useState<BancoFormacoesTreinador>(dadosLocais.banco)
+  const [notas, setNotas] = useState<Record<string, string>>(dadosLocais.notas)
   const [mensagem, setMensagem] = useState('Ainda não salvo neste navegador.')
   const [toast, setToast] = useState(false)
+  const [sessao, setSessao] = useState<Session | null>(null)
+  const [email, setEmail] = useState('')
+  const [statusNuvem, setStatusNuvem] = useState('')
   const id = chaveFormacaoTreinador(rodizio)
   const formacao = banco[id] ?? criarFormacao()
 
   const instrucoes = useMemo(() => 'Todos os pins começam na fila à esquerda. Arraste um por um para a posição definida pelo treinador no instante do nosso saque.', [])
+
+  useEffect(() => {
+    if (!supabase) return
+
+    void supabase.auth.getSession().then(({ data }) => setSessao(data.session))
+    const { data: inscricao } = supabase.auth.onAuthStateChange((_evento, proximaSessao) => setSessao(proximaSessao))
+    return () => inscricao.subscription.unsubscribe()
+  }, [])
+
+  useEffect(() => {
+    if (!sessao) return
+
+    void baixarDadosTreinador(sessao.user.id)
+      .then(async (dadosRemotos) => {
+        if (dadosRemotos) {
+          setBanco(dadosRemotos.banco)
+          setNotas(dadosRemotos.notas)
+          salvarDadosLocais(dadosRemotos)
+          setStatusNuvem('Formações carregadas da nuvem.')
+          return
+        }
+
+        const dadosAtuais = carregarDadosLocais()
+        await enviarDadosTreinador(sessao.user.id, dadosAtuais)
+        setStatusNuvem('Este dispositivo foi sincronizado pela primeira vez.')
+      })
+      .catch(() => setStatusNuvem('Não foi possível sincronizar agora. O conteúdo continua salvo neste dispositivo.'))
+  }, [sessao])
 
   const atualizarPonto = (funcao: FuncaoJogador, evento: React.PointerEvent<HTMLElement>) => {
     const quadra = evento.currentTarget.closest('[data-arrastando]') ?? evento.currentTarget
@@ -38,14 +78,38 @@ export function EditorFormacoes() {
     setBanco((atual) => ({ ...atual, [id]: { ...formacao, fora } }))
   }
 
-  const salvar = () => {
+  const salvar = async () => {
     const bancoAtualizado = { ...banco, [id]: formacao }
     setBanco(bancoAtualizado)
-    salvarBancoFormacoes(bancoAtualizado)
-    localStorage.setItem(CHAVE_NOTAS_TREINADOR, JSON.stringify(notas))
+    const dadosAtualizados = { banco: bancoAtualizado, notas }
+    salvarDadosLocais(dadosAtualizados)
     setMensagem('Formação e anotações salvas neste navegador.')
     setToast(true)
     window.setTimeout(() => setToast(false), 3200)
+
+    if (sessao) {
+      try {
+        await enviarDadosTreinador(sessao.user.id, dadosAtualizados)
+        setStatusNuvem('Sincronizado na nuvem agora.')
+      } catch {
+        setStatusNuvem('Salvo neste dispositivo. A nuvem será atualizada quando a conexão voltar.')
+      }
+    }
+  }
+
+  const entrarComEmail = async () => {
+    if (!supabase || !email.trim()) return
+    setStatusNuvem('Enviando link de acesso…')
+    const { error } = await supabase.auth.signInWithOtp({
+      email: email.trim(),
+      options: { emailRedirectTo: `${window.location.origin}/editor` },
+    })
+    setStatusNuvem(error ? 'Não foi possível enviar o link. Confira o e-mail e a configuração da nuvem.' : 'Link enviado. Abra o e-mail neste dispositivo para concluir o acesso.')
+  }
+
+  const sairDaNuvem = async () => {
+    await supabase?.auth.signOut()
+    setStatusNuvem('Você saiu. As formações locais continuam neste dispositivo.')
   }
 
   const restaurarBase = () => {
@@ -117,6 +181,24 @@ export function EditorFormacoes() {
         </section>
 
         <aside className="space-y-4 lg:pt-[112px]">
+          <div className="rounded-painel border border-borda p-4">
+            <h2 className="font-titulo text-base font-semibold">Sincronização</h2>
+            {!supabaseConfigurado ? (
+              <p className="mt-2 text-sm text-texto-suave">A nuvem ainda não foi conectada. Configure as chaves do Supabase para liberar o acesso no celular.</p>
+            ) : sessao ? (
+              <div className="mt-2 space-y-3">
+                <p className="text-sm text-texto-suave">Conectado como <span className="text-texto">{sessao.user.email}</span>. Suas formações são enviadas ao salvar.</p>
+                <button type="button" onClick={sairDaNuvem} className="cursor-pointer text-sm text-texto-suave underline underline-offset-4 hover:text-texto">Sair da conta</button>
+              </div>
+            ) : (
+              <div className="mt-3 space-y-2">
+                <label className="sr-only" htmlFor="email-sincronizacao">E-mail do treinador</label>
+                <input id="email-sincronizacao" type="email" value={email} onChange={(evento) => setEmail(evento.target.value)} placeholder="seuemail@exemplo.com" className="w-full rounded-controle border border-borda bg-fundo px-3 py-2 text-sm text-texto placeholder:text-texto-suave focus:outline-none" />
+                <button type="button" onClick={entrarComEmail} className="cursor-pointer rounded-controle bg-acento px-3 py-2 text-sm font-semibold text-fundo">Receber link de acesso</button>
+              </div>
+            )}
+            {statusNuvem && <p className="mt-3 text-xs text-texto-suave" role="status">{statusNuvem}</p>}
+          </div>
           <div className="rounded-painel bg-superficie p-4 shadow-elevado">
             <h2 className="font-titulo text-base font-semibold">Anotações do treinador</h2>
             <p className="mt-1 text-sm text-texto-suave">Esta nota fica vinculada somente a esta formação.</p>
