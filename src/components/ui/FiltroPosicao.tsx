@@ -19,8 +19,8 @@ interface PosicaoInfo {
 export const POSICOES: PosicaoInfo[] = [
   { codigo: 'L', label: 'Levantador', descricao: 'Infiltra da posição de defesa para a zona de levantamento (entre P2 e P3)' },
   { codigo: 'O', label: 'Oposto', descricao: 'Ataca pela saída de rede (P2) e defende no fundo (P1)' },
-  { codigo: 'P1', label: 'Ponteiro 1', descricao: 'Recepção principal, ataca pela saída de rede' },
-  { codigo: 'P2', label: 'Ponteiro 2', descricao: 'Recepção, ataca pelo meio / pipe' },
+  { codigo: 'P1', label: 'PT1', descricao: 'Recepção principal, ataca pela saída de rede' },
+  { codigo: 'P2', label: 'PT2', descricao: 'Recepção, ataca pelo meio / pipe' },
   { codigo: 'C1', label: 'Central 1', descricao: 'Bloqueio central, ataque de primeira tempo' },
   { codigo: 'C2', label: 'Central 2', descricao: 'Bloqueio central, rotação com líbero' },
   { codigo: 'LIB', label: 'Líbero', descricao: 'Especialista em defesa/recepção, substitui central no fundo' },

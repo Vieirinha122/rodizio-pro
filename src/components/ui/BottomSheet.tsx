@@ -2,7 +2,7 @@ import { createContext, useContext, useState, ReactNode } from 'react'
 import { AlertTriangle, Lightbulb, X } from 'lucide-react'
 import { PosicaoJogador } from './FiltroPosicao'
 import type { Rodizio } from '../../domain/rodizio'
-import { getInstrucao, type InstrucaoPosicao } from '../../domain/rodizio'
+import { getInstrucao, obterLeituraRodizio, type InstrucaoPosicao } from '../../domain/rodizio'
 
 interface BottomSheetContextValue {
   isOpen: boolean
@@ -50,8 +50,12 @@ function BottomSheet() {
 
   if (!isOpen || !posicaoSelecionada) return null
 
-  // Busca instrução real do domínio baseada no rodízio e posição
+  // Busca a instrução real do domínio usando o rodízio interno e a posição escolhida.
   const info: InstrucaoPosicao = getInstrucao(rodizioAtual, posicaoSelecionada)
+  const posicaoLevantador = obterLeituraRodizio(rodizioAtual).posicaoLevantador
+  const tituloFuncao = info.titulo
+    .replace('Ponteiro 1 (P1)', 'Ponteiro 1 (PT1)')
+    .replace('Ponteiro 2 (P2)', 'Ponteiro 2 (PT2)')
 
   return (
     <div
@@ -76,7 +80,7 @@ function BottomSheet() {
               aria-hidden="true"
             />
             <h2 id="bottom-sheet-title" className="font-titulo text-base font-semibold text-texto">
-              {info.titulo}
+              {tituloFuncao}
             </h2>
           </div>
           <button
@@ -123,7 +127,7 @@ function BottomSheet() {
           </section>
 
           <p className="border-t border-borda pt-2 text-center font-mono text-[11px] text-texto-suave/60">
-            Rodízio R{rodizioAtual} • {info.titulo}
+            Levantador em {posicaoLevantador} • {tituloFuncao}
           </p>
         </div>
 

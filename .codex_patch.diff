@@ -1,0 +1,223 @@
+*** Begin Patch
+*** Update File: src/components/ui/HeaderRodizio.tsx
+@@
+-/** Cabeçalho que separa a posição do levantador, a situação e a leitura atual. */
++/** Cabeçalho que separa a posição do levantador, a situação e a leitura atual. */
+ export function HeaderRodizio({
+@@
+-          <div className="flex items-center gap-3 lg:min-w-[260px] lg:justify-end" aria-live="polite">
+-            <span className="font-mono text-xs text-texto-suave">Leitura atual</span>
++          <div className="flex items-center gap-3 lg:min-w-[260px] lg:justify-end" aria-live="polite">
++            <span className="font-mono text-xs text-texto-suave">Referência atual</span>
+             <div className="text-right">
+               <p className="font-titulo text-sm font-semibold text-acento">Levantador em {posicaoLevantador}</p>
+               <p className="mt-0.5 font-mono text-[11px] text-texto-suave">Oposto em {posicaoOposto}</p>
+             </div>
+           </div>
+@@
+-          <span className="shrink-0 text-xs font-medium text-texto-suave">Levantador em</span>
++          <span className="shrink-0 text-xs font-medium text-texto-suave">Posição do levantador</span>
+@@
+-  const label = tipo === 'nosso-saque' ? 'Formação inicial' : 'Recepção'
++  const label = tipo === 'nosso-saque' ? 'Nosso saque' : 'Saque adversário'
+@@
+-      className={`cursor-pointer rounded-controle px-3 py-1.5 font-mono text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento ${compacto ? 'max-w-[132px] truncate' : ''} ${
++      className={`cursor-pointer rounded-controle px-3 py-1.5 font-mono text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento ${compacto ? 'max-w-[150px] truncate' : ''} ${
+         ativo
+           ? tipo === 'nosso-saque'
+             ? 'bg-acento text-fundo'
+*** Update File: src/App.tsx
+@@
+           <div className="flex items-end justify-between gap-4">
+             <div>
+               <h2 className="font-titulo text-xl font-semibold tracking-[-0.02em] text-texto">
+-                {tipoSaida === 'nosso-saque' ? 'Formação inicial do nosso saque' : 'Recepção do saque adversário'}
++                {tipoSaida === 'nosso-saque' ? 'Saque do nosso time' : 'Saque do time adversário'}
+               </h2>
+               <p className="mt-1 text-sm text-texto-suave">
+                 {tipoSaida === 'nosso-saque'
+-                  ? 'Veja onde cada jogador começa antes do rally.'
+-                  : 'Veja quem passa e por onde o levantador infiltra.'}
++                  ? 'Veja como o time se organiza para sacar e já defender a próxima bola.'
++                  : 'Veja o ajuste visual da recepção com base na posição atual do levantador.'}
+               </p>
+             </div>
+             <div className="hidden text-right sm:block">
+               <p className="font-mono text-xs text-texto-suave">Levantador em {estadoAtual.jogadores.find((jogador) => jogador.funcao === 'L')?.posicao}</p>
+-              <p className="mt-1 text-sm text-texto-suave">{tipoSaida === 'nosso-saque' ? 'Formação inicial' : 'Ajuste de recepção'}</p>
++              <p className="mt-1 text-sm text-texto-suave">{tipoSaida === 'nosso-saque' ? 'Posição para saque e defesa' : 'Ajuste visual da recepção'}</p>
+             </div>
+           </div>
+*** Update File: src/domain/rodizio/dados.ts
+@@
+-import type { Rodizio, PosicaoQuadra, FuncaoJogador, FormacaoRecepcao, JogadorNaQuadra, RotaInfiltracao, TipoSaida } from './tipos'
++import type { Rodizio, PosicaoQuadra, FuncaoJogador, FormacaoRecepcao, JogadorNaQuadra, RotaInfiltracao, TipoSaida, AreaCasinha } from './tipos'
+@@
+-/** Ajusta a formação de recepção para o desenho da casinha quando o levantador começa em P6. */
+-const COORDENADAS_RECEPCAO_P6: Partial<Record<FuncaoJogador, [number, number]>> = {
+-  L: [56, 48],
+-  O: [64, 45],
+-  C1: [78, 50],
+-  P1: [22, 80],
+-  P2: [78, 80],
+-  LIB: [50, 84],
+-}
+-
+-/** Área visual que destaca a casinha do levantador, oposto e central. */
+-const AREA_CASINHA_P6 = {
+-  x: 49,
+-  y: 22,
+-  largura: 38,
+-  altura: 40,
+-  rotulo: 'Casinha',
+-} as const
++/** Ajustes visuais da recepção para cada posição do levantador (P1-P6). */
++const AJUSTES_VISUAIS_RECEPCAO: Record<
++  Rodizio,
++  {
++    coordenadas: Partial<Record<FuncaoJogador, [number, number]>>
++    areaDestaque?: AreaCasinha
++  }
++> = {
++  1: {
++    coordenadas: {
++      L: [78, 52],
++      O: [24, 46],
++      C1: [52, 46],
++      P1: [78, 76],
++      P2: [50, 84],
++      LIB: [22, 82],
++    },
++    areaDestaque: {
++      x: 16,
++      y: 22,
++      largura: 68,
++      altura: 36,
++      rotulo: 'Ajuste',
++    },
++  },
++  2: {
++    coordenadas: {
++      L: [56, 48],
++      O: [64, 45],
++      C1: [78, 50],
++      P1: [22, 80],
++      P2: [78, 80],
++      LIB: [50, 84],
++    },
++    areaDestaque: {
++      x: 49,
++      y: 22,
++      largura: 38,
++      altura: 40,
++      rotulo: 'Casinha',
++    },
++  },
++  3: {
++    coordenadas: {
++      L: [22, 52],
++      O: [78, 46],
++      C1: [50, 46],
++      P1: [78, 80],
++      P2: [22, 76],
++      LIB: [50, 84],
++    },
++    areaDestaque: {
++      x: 16,
++      y: 22,
++      largura: 68,
++      altura: 36,
++      rotulo: 'Ajuste',
++    },
++  },
++  4: {
++    coordenadas: {
++      L: [22, 50],
++      P2: [50, 48],
++      LIB: [78, 58],
++      P1: [22, 82],
++      C1: [50, 84],
++      O: [78, 82],
++    },
++    areaDestaque: {
++      x: 14,
++      y: 24,
++      largura: 42,
++      altura: 30,
++      rotulo: 'Ajuste',
++    },
++  },
++  5: {
++    coordenadas: {
++      P1: [22, 58],
++      L: [50, 46],
++      P2: [78, 58],
++      C1: [22, 82],
++      O: [50, 84],
++      LIB: [78, 82],
++    },
++    areaDestaque: {
++      x: 39,
++      y: 22,
++      largura: 22,
++      altura: 20,
++      rotulo: 'Lev',
++    },
++  },
++  6: {
++    coordenadas: {
++      C1: [22, 52],
++      P1: [50, 46],
++      L: [78, 50],
++      O: [22, 82],
++      LIB: [50, 84],
++      P2: [78, 82],
++    },
++    areaDestaque: {
++      x: 42,
++      y: 22,
++      largura: 42,
++      altura: 30,
++      rotulo: 'Ajuste',
++    },
++  },
++}
+@@
+ export function gerarEstadoRodizio(rodizio: Rodizio, tipoSaida: TipoSaida, posicaoDestacada?: FuncaoJogador) {
+   const posicoesBase = POSICOES_BASE_POR_RODIZIO[rodizio]
+   
+   if (tipoSaida === 'saque-adversario') {
+     // RECEPÇÃO (saque adversário) - usa lógica existente
+     const formacao = FORMACOES_RECEPCAO.find(f => f.rodizio === rodizio)!
+     const rota = ROTAS_INFILTRACAO[rodizio]
++    const ajusteVisual = AJUSTES_VISUAIS_RECEPCAO[rodizio]
+@@
+         return {
+           funcao: funcaoJogador,
+           posicao,
+-          coordenadas: rodizio === 2 ? COORDENADAS_RECEPCAO_P6[funcaoJogador] : undefined,
++          coordenadas: ajusteVisual.coordenadas[funcaoJogador],
+           naRecepcao,
+           rotaInfiltracao: funcaoJogador === 'L' && rota ? rota : undefined,
+         }
+       })
+@@
+     jogadores.push({
+       funcao: 'LIB',
+       posicao: posicaoDoCentralSubstituido,
+-      coordenadas: rodizio === 2 ? COORDENADAS_RECEPCAO_P6.LIB : undefined,
++      coordenadas: ajusteVisual.coordenadas.LIB,
+       naRecepcao: true,
+     })
+@@
+       rodizio,
+       tipoSaida,
+       jogadores,
+       formacaoRecepcao: formacao,
+       posicaoDestacada,
+-      // O mapa interno ainda usa R2, que corresponde à posição P6 do levantador.
+-      areaCasinha: rodizio === 2 ? AREA_CASINHA_P6 : undefined,
++      areaCasinha: ajusteVisual.areaDestaque,
+     }
+   } else {
+*** End Patch

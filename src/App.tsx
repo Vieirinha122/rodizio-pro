@@ -20,7 +20,7 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-fundo text-texto font-corpo flex flex-col">
-      {/* Cabeçalho com situação do rally e seleção dos rodízios R1-R6. */}
+      {/* Cabeçalho com situação do rally e seleção da posição do levantador. */}
       <HeaderRodizio
         rodizioAtivo={rodizioAtivo}
         onRodizioChange={setRodizioAtivo}
@@ -34,22 +34,22 @@ function AppContent() {
           <div className="flex items-end justify-between gap-4">
             <div>
               <h2 className="font-titulo text-xl font-semibold tracking-[-0.02em] text-texto">
-                {tipoSaida === 'nosso-saque' ? 'Formação inicial do rodízio' : 'Recepção do saque adversário'}
+                {tipoSaida === 'nosso-saque' ? 'Saque do nosso time' : 'Saque do time adversário'}
               </h2>
               <p className="mt-1 text-sm text-texto-suave">
                 {tipoSaida === 'nosso-saque'
-                  ? 'Veja onde cada jogador começa antes do rally.'
-                  : 'Veja quem passa e por onde o levantador infiltra.'}
+                  ? 'Veja como o time se organiza para sacar e já defender a próxima bola.'
+                  : 'Veja o ajuste visual da recepção com base na posição atual do levantador.'}
               </p>
             </div>
             <div className="hidden text-right sm:block">
-              <p className="font-mono text-xs text-texto-suave">Rodízio R{rodizioAtivo}</p>
-              <p className="mt-1 text-sm text-texto-suave">L na {estadoAtual.jogadores.find((jogador) => jogador.funcao === 'L')?.posicao}</p>
+              <p className="font-mono text-xs text-texto-suave">Levantador em {estadoAtual.jogadores.find((jogador) => jogador.funcao === 'L')?.posicao}</p>
+              <p className="mt-1 text-sm text-texto-suave">{tipoSaida === 'nosso-saque' ? 'Posição para saque e defesa' : 'Ajuste visual da recepção'}</p>
             </div>
           </div>
 
           <QuadraSVG
-            key={`quadra-${rodizioAtivo}-${tipoSaida}-${posicaoSelecionada}`}
+            key={`quadra-${rodizioAtivo}-${posicaoSelecionada}`}
             estado={estadoAtual}
             onJogadorClick={handleJogadorClick}
           />

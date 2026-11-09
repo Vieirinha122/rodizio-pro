@@ -1,8 +1,8 @@
-import type { Rodizio, TipoSaida } from '../../domain/rodizio'
-import { obterLeituraRodizio } from '../../domain/rodizio'
+import type { PosicaoQuadra, Rodizio, TipoSaida } from '../../domain/rodizio'
+import { obterLeituraRodizio, RODIZIO_POR_POSICAO_LEVANTADOR } from '../../domain/rodizio'
 
 interface HeaderRodizioProps {
-  /** Rodízio atualmente ativo (R1-R6). */
+  /** Posição do levantador que está ativa na formação. */
   rodizioAtivo: Rodizio
   /** Callback quando o rodízio muda. */
   onRodizioChange: (rodizio: Rodizio) => void
@@ -12,9 +12,9 @@ interface HeaderRodizioProps {
   onTipoSaidaChange: (tipo: TipoSaida) => void
 }
 
-const rodizios: Rodizio[] = [1, 2, 3, 4, 5, 6]
+const posicoesLevantador: PosicaoQuadra[] = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6']
 
-/** Cabeçalho que separa o rodízio, a situação do rally e a leitura atual. */
+/** Cabeçalho que separa a posição do levantador, a situação e a leitura atual. */
 export function HeaderRodizio({
   rodizioAtivo,
   onRodizioChange,
@@ -50,35 +50,35 @@ export function HeaderRodizio({
           </div>
 
           <div className="flex items-center gap-3 lg:min-w-[260px] lg:justify-end" aria-live="polite">
-            <span className="font-mono text-xs text-texto-suave">Leitura atual</span>
+            <span className="font-mono text-xs text-texto-suave">Referência atual</span>
             <div className="text-right">
-              <p className="font-titulo text-sm font-semibold text-acento">Rodízio R{rodizioAtivo}</p>
-              <p className="mt-0.5 font-mono text-[11px] text-texto-suave">L na {posicaoLevantador} · O na {posicaoOposto}</p>
+              <p className="font-titulo text-sm font-semibold text-acento">Levantador em {posicaoLevantador}</p>
+              <p className="mt-0.5 font-mono text-[11px] text-texto-suave">Oposto em {posicaoOposto}</p>
             </div>
           </div>
         </div>
 
         <div className="mt-3 flex flex-col gap-2 border-t border-borda/70 pt-3 sm:flex-row sm:items-center sm:gap-4">
-          <span className="shrink-0 text-xs font-medium text-texto-suave">Rodízio</span>
-          <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto pb-0.5 scrollbar-hide" role="radiogroup" aria-label="Rodízio do time">
-            {rodizios.map((rodizio) => {
-              const ativo = rodizioAtivo === rodizio
+          <span className="shrink-0 text-xs font-medium text-texto-suave">Posição do levantador</span>
+          <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto pb-0.5 scrollbar-hide" role="radiogroup" aria-label="Posição do levantador">
+            {posicoesLevantador.map((posicao) => {
+              const ativo = posicaoLevantador === posicao
 
               return (
                 <button
-                  key={rodizio}
+                  key={posicao}
                   type="button"
                   role="radio"
                   aria-checked={ativo}
-                  aria-label={`Rodízio R${rodizio}`}
-                  onClick={() => onRodizioChange(rodizio)}
+                  aria-label={`Levantador na posição ${posicao}`}
+                  onClick={() => onRodizioChange(RODIZIO_POR_POSICAO_LEVANTADOR[posicao])}
                   className={`min-h-9 min-w-12 cursor-pointer rounded-controle px-3 py-1.5 font-mono text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento ${
                     ativo
                       ? 'bg-acento text-fundo'
                       : 'bg-superficie text-texto-suave hover:bg-borda hover:text-texto'
                   }`}
                 >
-                  R{rodizio}
+                  {posicao}
                 </button>
               )
             })}
@@ -100,7 +100,7 @@ function BotaoModo({
   onClick: (tipo: TipoSaida) => void
   compacto?: boolean
 }) {
-  const label = tipo === 'nosso-saque' ? 'Formação inicial' : 'Recepção'
+  const label = tipo === 'nosso-saque' ? 'Nosso saque' : 'Saque adversário'
 
   return (
     <button
@@ -108,7 +108,7 @@ function BotaoModo({
       role="radio"
       aria-checked={ativo}
       onClick={() => onClick(tipo)}
-      className={`cursor-pointer rounded-controle px-3 py-1.5 font-mono text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento ${compacto ? 'max-w-[132px] truncate' : ''} ${
+      className={`cursor-pointer rounded-controle px-3 py-1.5 font-mono text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento ${compacto ? 'max-w-[150px] truncate' : ''} ${
         ativo
           ? tipo === 'nosso-saque'
             ? 'bg-acento text-fundo'

@@ -25,12 +25,31 @@ export type FuncaoJogador =
 export interface JogadorNaQuadra {
   funcao: FuncaoJogador
   posicao: PosicaoQuadra
+  /** Coordenadas ajustadas quando a formação de recepção muda a posição visual. */
+  coordenadas?: [number, number]
+  /** Indica uma função mostrada fora das linhas da quadra, como o líbero aguardando a troca. */
+  foraDaQuadra?: boolean
+  /** Indica que o jogador está fora da quadra porque executa o saque. */
+  sacando?: boolean
   /** Se está na recepção de saque (3 passadores) - só para saque adversário */
   naRecepcao: boolean
   /** Para o levantador: coordenadas da rota de infiltração */
   rotaInfiltracao?: RotaInfiltracao
   /** Reservado para uma etapa futura de movimentação após a formação inicial. */
   rotaTransicao?: RotaInfiltracao
+}
+
+export interface AreaCasinha {
+  /** Coordenada horizontal da área em percentual da quadra. */
+  x: number
+  /** Coordenada vertical da área em percentual da quadra. */
+  y: number
+  /** Largura da área em percentual da quadra. */
+  largura: number
+  /** Altura da área em percentual da quadra. */
+  altura: number
+  /** Texto curto que identifica a formação visual. */
+  rotulo: string
 }
 
 export interface RotaInfiltracao {
@@ -64,4 +83,6 @@ export interface EstadoRodizio {
   jogadores: JogadorNaQuadra[]
   formacaoRecepcao: FormacaoRecepcao
   posicaoDestacada?: FuncaoJogador
+  /** Área especial exibida somente na formação de recepção com levantador em P6. */
+  areaCasinha?: AreaCasinha
 }
